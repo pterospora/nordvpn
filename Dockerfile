@@ -1,17 +1,21 @@
 ARG ARCH=amd64
-FROM balenalib/${ARCH}-alpine
+FROM balenalib/${ARCH}-debian
 
 LABEL maintainer="Julio Gutierrez <bubuntux@gmail.com>"
 
+ARG NORDVPN_BIN_ARCH=amd64
+ARG NORDVPN_BIN_VERSION=3.5.0-2
+
 #CROSSRUN [ "cross-build-start" ]
-RUN apk --no-cache --no-progress upgrade && \
-    apk --no-cache --no-progress add bash curl jq ip6tables iptables openvpn shadow tini tzdata && \
-    addgroup -S vpn && \
-    rm -rf /tmp/*
+RUN apt-get update && apt-get upgrade && \
+    curl "https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_${NORDVPN_BIN_VERSION}_${NORDVPN_BIN_ARCH}.deb" -o /tmp/nordvpn.deb && \
+    apt-get install /tmp/nordvpn.deb || echo "error on post-installation script expected" && \
+    apt-get clean && \
+    rm -rf \
+        /tmp/* \
+        /var/lib/apt/lists/* \
+        /var/tmp/*
 #CROSSRUN [ "cross-build-end" ]
 
-ENV NET_IFACE=eth0
-
-VOLUME ["/vpn"]
-ENTRYPOINT ["/sbin/tini", "--", "/usr/bin/nordVpn.sh"]
-COPY nordVpn.sh /usr/bin
+COPY start_vpn.sh /usr/bin
+CMD /usr/bin/start_vpn.sh

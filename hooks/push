@@ -34,8 +34,8 @@ for arch in ${X86} ${ARM} ; do
 done
 manifestPush ${VERSION}
 
-if [[ "${GIT_BRANCH}" == "master" ]]; then
-  push "latest"
-else
-  push "${GIT_BRANCH}"
-fi
+#if [[ "${GIT_BRANCH}" == "master" ]]; then
+#  push "latest"
+#else
+#  push "${GIT_BRANCH}"
+#fi
