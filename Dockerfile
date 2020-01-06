@@ -3,8 +3,11 @@ FROM balenalib/${ARCH}-debian
 
 LABEL maintainer="Julio Gutierrez <bubuntux@gmail.com>"
 
+HEALTHCHECK --interval=60s --timeout=5s --start-period=120s \
+             CMD STATUS=$(nordvpn status); echo $STATUS; if test "${STATUS#*Disconnected}" != "$STATUS"; then nordvpn connect ${CONNECT} ; exit 1; fi
+
 ARG NORDVPN_BIN_ARCH=amd64
-ARG NORDVPN_BIN_VERSION=3.5.0-2
+ARG NORDVPN_BIN_VERSION=3.6.0-1
 
 #CROSSRUN [ "cross-build-start" ]
 RUN apt-get update && apt-get upgrade && \
@@ -19,3 +22,4 @@ RUN apt-get update && apt-get upgrade && \
 
 COPY start_vpn.sh /usr/bin
 CMD /usr/bin/start_vpn.sh
+
