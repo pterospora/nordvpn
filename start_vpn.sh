@@ -2,6 +2,7 @@
 [[ -n ${DEBUG} ]] && set -x
 NET_IFACE=${NET_IFACE:-"eth0"}
 [[ -n ${COUNTRY} && -z ${CONNECT} ]] && CONNECT=${COUNTRY}
+[[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
 
 kill_switch() {
 	iptables  -F OUTPUT
@@ -16,11 +17,6 @@ kill_switch() {
 	[[ -n ${docker_network} ]]  && iptables  -A OUTPUT -d ${docker_network} -j ACCEPT
 	[[ -n ${docker6_network} ]] && ip6tables -A OUTPUT -d ${docker6_network} -j ACCEPT 2> /dev/null
 	
-	if [[ ${GROUPID:-""} =~ ^[0-9]+$ ]]; then
-		groupmod -g ${GROUPID} -o vpn
-	else
-		groupadd vpn 
-	fi
 	iptables  -A OUTPUT -m owner --gid-owner vpn -j ACCEPT || {
 		iptables  -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
 		iptables  -A OUTPUT -p udp -m udp --dport 51820 -j ACCEPT
