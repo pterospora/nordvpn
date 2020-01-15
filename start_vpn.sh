@@ -10,8 +10,9 @@ kill_switch() {
 	iptables  -A OUTPUT -o lo -j ACCEPT
 	ip6tables -A OUTPUT -o lo -j ACCEPT 2> /dev/null
 
-	local docker_network=` ip -o addr show dev ${NET_IFACE:-"eth0"} | awk '$3 == "inet"  {print $4}'      ` \
-	      docker6_network=`ip -o addr show dev ${NET_IFACE:-"eth0"} | awk '$3 == "inet6" {print $4; exit}'`	
+	local net_iface=${NET_IFACE:-"eth0"}
+	      docker_network=` ip -o addr show dev ${net_iface} | awk '$3 == "inet"  {print $4}'      ` \
+	      docker6_network=`ip -o addr show dev ${net_iface} | awk '$3 == "inet6" {print $4; exit}'`	
 	[[ -n ${docker_network} ]]  && iptables  -A OUTPUT -d ${docker_network} -j ACCEPT
 	[[ -n ${docker6_network} ]] && ip6tables -A OUTPUT -d ${docker6_network} -j ACCEPT 2> /dev/null
 	
@@ -20,8 +21,20 @@ kill_switch() {
 	else
 		groupadd vpn 
 	fi
-	iptables  -A OUTPUT -m owner --gid-owner vpn -j ACCEPT
-	ip6tables -A OUTPUT -m owner --gid-owner vpn -j ACCEPT 2>/dev/null 
+	iptables  -A OUTPUT -m owner --gid-owner vpn -j ACCEPT || {
+		iptables  -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
+		iptables  -A OUTPUT -p udp -m udp --dport 51820 -j ACCEPT
+		iptables  -A OUTPUT -p tcp -m tcp --dport 1194 -j ACCEPT
+		iptables  -A OUTPUT -p udp -m udp --dport 1194 -j ACCEPT
+		iptables  -A OUTPUT -o ${net_iface} -d api.nordvpn.com -j ACCEPT
+	}
+        ip6tables -A OUTPUT -m owner --gid-owner vpn -j ACCEPT 2>/dev/null || {
+		ip6tables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT 2>/dev/null
+		ip6tables -A OUTPUT -p udp -m udp --dport 51820 -j ACCEPT 2>/dev/null
+		ip6tables -A OUTPUT -p tcp -m tcp --dport 1194 -j ACCEPT 2>/dev/null
+		ip6tables -A OUTPUT -p udp -m udp --dport 1194 -j ACCEPT 2>/dev/null
+		ip6tables -A OUTPUT -o ${net_iface} -d api.nordvpn.com -j ACCEPT 2>/dev/null
+	}
 }
 
 setup_nordvpn() {
