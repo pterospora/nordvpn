@@ -1,6 +1,7 @@
 #!/bin/bash
-
 [[ -n ${DEBUG} ]] && set -x
+NET_IFACE=${NET_IFACE:-"eth0"}
+[[ -n ${COUNTRY} && -z ${CONNECT} ]] && CONNECT=${COUNTRY}
 
 kill_switch() {
 	iptables  -F OUTPUT
@@ -10,9 +11,8 @@ kill_switch() {
 	iptables  -A OUTPUT -o lo -j ACCEPT
 	ip6tables -A OUTPUT -o lo -j ACCEPT 2> /dev/null
 
-	local net_iface=${NET_IFACE:-"eth0"}
-	      docker_network=` ip -o addr show dev ${net_iface} | awk '$3 == "inet"  {print $4}'      ` \
-	      docker6_network=`ip -o addr show dev ${net_iface} | awk '$3 == "inet6" {print $4; exit}'`	
+	local docker_network=` ip -o addr show dev ${NET_IFACE} | awk '$3 == "inet"  {print $4}'      ` \
+	      docker6_network=`ip -o addr show dev ${NET_IFACE} | awk '$3 == "inet6" {print $4; exit}'`	
 	[[ -n ${docker_network} ]]  && iptables  -A OUTPUT -d ${docker_network} -j ACCEPT
 	[[ -n ${docker6_network} ]] && ip6tables -A OUTPUT -d ${docker6_network} -j ACCEPT 2> /dev/null
 	
@@ -26,15 +26,37 @@ kill_switch() {
 		iptables  -A OUTPUT -p udp -m udp --dport 51820 -j ACCEPT
 		iptables  -A OUTPUT -p tcp -m tcp --dport 1194 -j ACCEPT
 		iptables  -A OUTPUT -p udp -m udp --dport 1194 -j ACCEPT
-		iptables  -A OUTPUT -o ${net_iface} -d api.nordvpn.com -j ACCEPT
+		iptables  -A OUTPUT -o ${NET_IFACE} -d api.nordvpn.com -j ACCEPT
 	}
         ip6tables -A OUTPUT -m owner --gid-owner vpn -j ACCEPT 2>/dev/null || {
 		ip6tables -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT 2>/dev/null
 		ip6tables -A OUTPUT -p udp -m udp --dport 51820 -j ACCEPT 2>/dev/null
 		ip6tables -A OUTPUT -p tcp -m tcp --dport 1194 -j ACCEPT 2>/dev/null
 		ip6tables -A OUTPUT -p udp -m udp --dport 1194 -j ACCEPT 2>/dev/null
-		ip6tables -A OUTPUT -o ${net_iface} -d api.nordvpn.com -j ACCEPT 2>/dev/null
+		ip6tables -A OUTPUT -o ${NET_IFACE} -d api.nordvpn.com -j ACCEPT 2>/dev/null
 	}
+
+	[[ -n ${NETWORK} ]]  && for net in ${NETWORK//[;,]/ };  do return_route ${net};  done
+	[[ -n ${NETWORK6} ]] && for net in ${NETWORK6//[;,]/ }; do return_route6 ${net}; done
+	[[ -n ${WHITELIST} ]] && for domain in ${WHITELIST//[;,]/ }; do white_list ${domain}; done
+}
+
+return_route() { # Add a route back to your network, so that return traffic works
+    local network="$1" gw="$(ip route | awk '/default/ {print $3}')"
+    ip route add to ${network} via ${gw} dev ${NET_IFACE}
+    iptables -A OUTPUT --destination ${network} -j ACCEPT
+}
+
+return_route6() { # Add a route back to your network, so that return traffic works
+    local network="$1" gw="$(ip -6 route | awk '/default/ {print $3}')"
+    ip -6 route add to ${network} via ${gw} dev ${NET_IFACE}
+    ip6tables -A OUTPUT --destination ${network} -j ACCEPT 2>/dev/null
+}
+
+white_list() { # Allow unsecured traffic for an specific domain
+    local domain=`echo $1 | sed 's/^.*:\/\///;s/\/.*$//'`
+    iptables  -A OUTPUT -o ${NET_IFACE} -d ${domain} -j ACCEPT
+    ip6tables -A OUTPUT -o ${NET_IFACE} -d ${domain} -j ACCEPT 2>/dev/null
 }
 
 setup_nordvpn() {
@@ -43,7 +65,6 @@ setup_nordvpn() {
 	[[ -n ${OBFUSCATE} ]] && nordvpn set obfuscate ${OBFUSCATE}
 	[[ -n ${CYBER_SEC} ]] && nordvpn set cybersec ${CYBER_SEC}
 	[[ -n ${DNS} ]] && nordvpn set dns ${DNS}
-	[[ -n ${SUBNET} ]] && for net in ${SUBNET//[;,]/ }; do nordvpn whitelist add subnet $net; done
 	[[ -n ${DEBUG} ]] && nordvpn settings
 }
 
