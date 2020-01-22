@@ -7,7 +7,7 @@ HEALTHCHECK --interval=60s --timeout=5s --start-period=120s \
              CMD STATUS=$(nordvpn status); echo $STATUS; if test "${STATUS#*Disconnected}" != "$STATUS"; then nordvpn connect ${CONNECT} ; exit 1; fi
 
 ARG NORDVPN_BIN_ARCH=amd64
-ARG NORDVPN_BIN_VERSION=3.6.0-2
+ARG NORDVPN_BIN_VERSION=3.6.0-3
 
 #CROSSRUN [ "cross-build-start" ]
 RUN addgroup --system vpn && \

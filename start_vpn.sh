@@ -61,13 +61,14 @@ setup_nordvpn() {
 	[[ -n ${OBFUSCATE} ]] && nordvpn set obfuscate ${OBFUSCATE}
 	[[ -n ${CYBER_SEC} ]] && nordvpn set cybersec ${CYBER_SEC}
 	[[ -n ${DNS} ]] && nordvpn set dns ${DNS}
+ 	[[ -n ${NETWORK} ]] && for net in ${NETWORK//[;,]/ }; do nordvpn whitelist add subnet $net; done 
 	[[ -n ${DEBUG} ]] && nordvpn settings
 }
 
 kill_switch
 
 sg vpn -c nordvpnd & 
-sleep 0.5
+sleep 0.75
 
 nordvpn login -u ${USER} -p ${PASS} || exit 1
 
