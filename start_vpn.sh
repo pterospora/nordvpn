@@ -61,7 +61,10 @@ setup_nordvpn() {
 	[[ -n ${OBFUSCATE} ]] && nordvpn set obfuscate ${OBFUSCATE}
 	[[ -n ${CYBER_SEC} ]] && nordvpn set cybersec ${CYBER_SEC}
 	[[ -n ${DNS} ]] && nordvpn set dns ${DNS}
- 	[[ -n ${NETWORK} ]] && for net in ${NETWORK//[;,]/ }; do nordvpn whitelist add subnet $net; done 
+
+	local docker_network=` ip -o addr show dev ${NET_IFACE} | awk '$3 == "inet"  {print $4}' `	    	
+	[[ -n ${docker_network} ]]  && nordvpn whitelist add subnet $docker_network
+
 	[[ -n ${DEBUG} ]] && nordvpn settings
 }
 
