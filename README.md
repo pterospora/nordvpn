@@ -33,8 +33,7 @@ This container was designed to be started first to provide a connection to other
 
     docker run -ti --cap-add=NET_ADMIN --device /dev/net/tun --name vpn \
                 -e USER=user@email.com -e PASS='pas$word' \
-                -e COUNTRY=country -e CATEGORY=category \
-                -e PROTOCOL=protocol -d bubuntux/nordvpn
+                -e CONNECT=country -e TECHNOLOGY=NordLynx -d bubuntux/nordvpn
 
 Once it's up other containers can be started using it's network connection:
 
@@ -68,11 +67,9 @@ services:
     environment:
       - USER=user@email.com
       - PASS='pas$word'
-      - COUNTRY=United_States
-      - PROTOCOL=UDP
-      - CATEGORY=P2P
+      - CONNECT=United_States
+      - TECHNOLOGY=NordLynx
       - NETWORK=192.168.1.0/24
-      - OPENVPN_OPTS=--pull-filter ignore "ping-restart" --ping-exit 180
       - TZ=America/Denver
     ports:
       - 8080:80
@@ -97,13 +94,20 @@ All traffic going through the container is router to the vpn (unless whitelisted
    - Provide a [country_code] argument to connect to a specific country. For example: us
    - Provide a [city] argument to connect to a specific city. For example: 'Hungary Budapest'
    - Provide a [group] argument to connect to a specific servers group. For example: Onion_Over_VPN
-   - --group value, -g value  Specify a server group to connect to
- * `TECHNOLOGY` - OpenVPN or NordLynx.
+   - --group value, -g value  Specify a server group to connect to. For example: 'us -g p2p'
+ * `TECHNOLOGY` - Specify Technology to use: 
+   * OpenVPN    - Traditional connection 
+   * NordLynx   - NordVpn wireguard implementation  
  * `PROTOCOL`   - TCP or UDP (only valid when using OpenVPN).
  * `OBFUSCATE`  - When enabled, this feature allows to bypass network traffic sensors which aim to detect usage of the protocol and log, throttle or block it (only valid when using OpenVpn, values: enable or disable). 
  * `CYBER_SEC`  - When enabled, the CyberSec feature will automatically block suspicious websites so that no malware or other cyber threats can infect your device. Additionally, no flashy ads will come into your sight. More information on how it works: https://nordvpn.com/features/cybersec/ (values: enable or disable).
- * `DNS` -   Can set up to 3 DNS servers  (0.0.0.0 1.1.1.1 or disable).
- * `SUBNET` - CIDR networks (IE 192.168.1.0/24), add a route to allows replies once the VPN is up.
+ * `DNS` -   Can set up to 3 DNS servers. For example 1.1.1.1,8.8.8.8 or disable
+ * `WHITELIST` - List of domains that are gonna be accessible _outside_ vpn (IE rarbg.to,yts.am).
+ * `NETWORK`  - CIDR networks (IE 192.168.1.0/24), add a route to allows replies once the VPN is up.
+ * `NETWORK6` - CIDR IPv6 networks (IE fe00:d34d:b33f::/64), add a route to allows replies once the VPN is up.
+ * `TZ` - Set a timezone (IE EST5EDT, America/Denver, [full list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)).
+ * `GROUPID` - Set the GID for the vpn.
+ * `NET_IFACE` - Network Interface to bind the vpn (Useful when combined with `--network host` to protect the entire host).
  * `DEBUG`    - Set to 'on' for troubleshooting (User and Pass would be log, so use it carefully)
 
 # Issues
