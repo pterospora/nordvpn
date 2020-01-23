@@ -1,8 +1,13 @@
 #!/bin/bash
 [[ -n ${DEBUG} ]] && set -x
-NET_IFACE=${NET_IFACE:-"eth0"}
+
+DAEMON_WAIT=${DAEMON_WAIT:-"0.5"}
 [[ -n ${COUNTRY} && -z ${CONNECT} ]] && CONNECT=${COUNTRY}
 [[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
+
+NET_IFACE=${NET_IFACE:-"eth0"}
+DOCKER_NET=` ip -o addr show dev ${NET_IFACE} | awk '$3 == "inet"  {print $4}'      `
+DOCKER_6NET=`ip -o addr show dev ${NET_IFACE} | awk '$3 == "inet6" {print $4; exit}'`	
 
 kill_switch() {
 	iptables  -F OUTPUT
@@ -12,10 +17,8 @@ kill_switch() {
 	iptables  -A OUTPUT -o lo -j ACCEPT
 	ip6tables -A OUTPUT -o lo -j ACCEPT 2> /dev/null
 
-	local docker_network=` ip -o addr show dev ${NET_IFACE} | awk '$3 == "inet"  {print $4}'      ` \
-	      docker6_network=`ip -o addr show dev ${NET_IFACE} | awk '$3 == "inet6" {print $4; exit}'`	
-	[[ -n ${docker_network} ]]  && iptables  -A OUTPUT -d ${docker_network} -j ACCEPT
-	[[ -n ${docker6_network} ]] && ip6tables -A OUTPUT -d ${docker6_network} -j ACCEPT 2> /dev/null
+	[[ -n ${DOCKER_NET} ]]  && iptables  -A OUTPUT -d ${DOCKER_NET} -j ACCEPT
+	[[ -n ${DOCKER_6NET} ]] && ip6tables -A OUTPUT -d ${DOCKER_6NET} -j ACCEPT 2> /dev/null
 	
 	iptables  -A OUTPUT -m owner --gid-owner vpn -j ACCEPT || {
 		iptables  -A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
@@ -61,17 +64,15 @@ setup_nordvpn() {
 	[[ -n ${OBFUSCATE} ]] && nordvpn set obfuscate ${OBFUSCATE}
 	[[ -n ${CYBER_SEC} ]] && nordvpn set cybersec ${CYBER_SEC}
 	[[ -n ${DNS} ]] && nordvpn set dns ${DNS}
-
-	local docker_network=` ip -o addr show dev ${NET_IFACE} | awk '$3 == "inet"  {print $4}' `	    	
-	[[ -n ${docker_network} ]]  && nordvpn whitelist add subnet $docker_network
-
+	[[ -n ${DOCKER_NET} ]]  && nordvpn whitelist add subnet $DOCKER_NET
+	[[ -n ${NETWORK} ]]  && for net in ${NETWORK//[;,]/ };  do nordvpn whitelist add subnet ${net};  done
 	[[ -n ${DEBUG} ]] && nordvpn settings
 }
 
 kill_switch
 
 sg vpn -c nordvpnd & 
-sleep 0.75
+sleep ${DAEMON_WAIT}
 
 nordvpn login -u ${USER} -p ${PASS} || exit 1
 
