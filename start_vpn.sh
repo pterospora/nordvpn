@@ -1,7 +1,5 @@
 #!/bin/bash
 [[ -n ${DEBUG} ]] && set -x
-
-DAEMON_WAIT=${DAEMON_WAIT:-"0.5"}
 [[ -n ${COUNTRY} && -z ${CONNECT} ]] && CONNECT=${COUNTRY}
 [[ "${GROUPID:-""}" =~ ^[0-9]+$ ]] && groupmod -g $GROUPID -o vpn
 
@@ -71,11 +69,12 @@ setup_nordvpn() {
 
 kill_switch
 
+pkill nordvpnd 
+rm -f /run/nordvpnd.sock
 sg vpn -c nordvpnd & 
-sleep ${DAEMON_WAIT}
+sleep 0.5
 
-nordvpn login -u ${USER} -p ${PASS} || exit 1
-
+nordvpn login -u ${USER} -p ${PASS}
 setup_nordvpn
 
 nordvpn connect ${CONNECT} || exit 1
