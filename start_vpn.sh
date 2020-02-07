@@ -52,8 +52,8 @@ return_route6() { # Add a route back to your network, so that return traffic wor
 
 white_list() { # Allow unsecured traffic for an specific domain
     local domain=`echo $1 | sed 's/^.*:\/\///;s/\/.*$//'`
-    iptables  -A OUTPUT -o ${NET_IFACE} -d ${domain} -j ACCEPT
-    ip6tables -A OUTPUT -o ${NET_IFACE} -d ${domain} -j ACCEPT 2>/dev/null
+    sg vpn -c iptables  -A OUTPUT -o ${NET_IFACE} -d ${domain} -j ACCEPT
+    sg vpn -c ip6tables -A OUTPUT -o ${NET_IFACE} -d ${domain} -j ACCEPT 2>/dev/null
 }
 
 setup_nordvpn() {

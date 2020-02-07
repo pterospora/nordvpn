@@ -7,7 +7,7 @@ HEALTHCHECK --interval=60s --timeout=5s --start-period=120s \
 		CMD ping -c 1 -q google.com; if test "$?" != "0"; then nordvpn connect ${CONNECT} ; exit 1; fi
 
 ARG NORDVPN_BIN_ARCH=amd64
-ARG NORDVPN_BIN_VERSION=3.6.0-4
+ARG NORDVPN_BIN_VERSION=3.6.0-5
 
 #CROSSRUN [ "cross-build-start" ]
 RUN addgroup --system vpn && \
