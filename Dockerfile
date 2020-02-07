@@ -10,6 +10,7 @@ ARG NORDVPN_BIN_VERSION=3.6.0-5
 
 RUN addgroup --system vpn && \
     apt-get update && apt-get upgrade -y && \
+    apt-get install -y iptables curl && \
     curl "https://repo.nordvpn.com/deb/nordvpn/debian/pool/main/nordvpn_${NORDVPN_BIN_VERSION}_${NORDVPN_BIN_ARCH}.deb" -o /tmp/nordvpn.deb && \
     apt-get install -y /tmp/nordvpn.deb || echo "error on post-installation script expected" && \
     update-alternatives --set iptables /usr/sbin/iptables-legacy && \
